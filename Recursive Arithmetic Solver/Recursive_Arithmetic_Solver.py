@@ -103,34 +103,65 @@ def solve(equation): # when no more operators exist, it returns to the previous 
     return result
 # end function
 
-def RecursiveSolve(equation): #note probe for o/c parenthesis then recur on contents. replace parenthesis with solution
+def RecursiveParenthesis(equation): #note probe for o/c parenthesis then recur on contents. replace parenthesis with solution
     # this is a recursive function: the base case is no more operators at the end. This function divides the equation
     # this function must also play by the rules of PEMDAS
     # ------PARENTHESIS------
-    oPT = -1 # open parenthesis location
-    cPT = -1 # close parenthesis location
-    i = '' # captures values at index locations
-    index = 0 # index keeps track how far through the equation we are
-    mismatch = 0 # to make sure internal parenthesis don't screw anything up
-    for i in equation:
-        if i == '(' and oPT != -1: # changes mismatch if 2nd pair of parenthesis
-            mismatch += 1
-        elif i == '(' and oPT == -1:
-            oPT = equation[index] # captures opening parenthesis
-        elif i == ')' and mismatch == 0:
-            cPT = equation[index] # captures matching ending parenthesis
-            break
-        elif i == ')' and mismatch > 0:
-            mismatch -= 1 # reduces mismatch from closing internal parenthesis
-        index += 1
-    if oPT != -1:
-        result = RecursiveSolve(equation[oPT, cPT])
-        beg = equation[0, oPT+1]
-        end = equation[cPT, len(equation)]
-        equation = beg + result + end
+    while True: # loop to ensure all outer parenthesis are solved
+        oPT = -1 # open parenthesis location
+        cPT = -1 # close parenthesis location
+        i = '' # captures values at index locations
+        index = 0 # index keeps track how far through the equation we are
+        mismatch = 0 # to make sure internal parenthesis don't screw anything up
+        for i in equation:
+            if i == '(' and oPT != -1: # changes mismatch if 2nd pair of parenthesis
+                mismatch += 1
+            elif i == '(' and oPT == -1:
+                oPT = equation[index] # captures opening parenthesis
+            elif i == ')' and mismatch == 0:
+                cPT = equation[index] # captures matching ending parenthesis
+                break
+            elif i == ')' and mismatch > 0:
+                mismatch -= 1 # reduces mismatch from closing internal parenthesis
+            index += 1
+        if oPT != -1:
+            result = RecursiveParenthesis(equation[oPT, cPT])
+            beg = equation[0, oPT+1] # beginning
+            end = equation[cPT, len(equation)] # end
+            equation = beg + result + end # reassign
+        else: # if no parenthesis detected
+            return RecursiveExponents(equation)
+
     # ------END PARENTHESIS------
 
+def RecursiveExponents(equation):
+# ------EXPONENTS------
+    i = len(equation)
+    while True:
+        i -= 1
+        if equation[i] == '^':
+            solution = getNumber(equation, i)
+
+
+    # ------MINUS------
+
+
     # ------TODO: finish rest of recursive class------
+
+def getNumber(equation, i):
+    counter = 0
+    begOf1st = -1
+    endOf2nd = -1
+    while True:
+        if (equation[i-counter] in listOfOperators or i-counter == 0) and begOf1st != -1:
+            begOf1st = i-counter+1
+        if (equation[i+counter] in listOfOperators or i+counter == len(equation-1)) and begOf2nd != -1:
+            endOf2nd = i+counter
+        counter += 1
+        if begOf1st != -1 and endOf2nd != -1:
+            break
+    return solve(equation[begOf1st, endOf2nd])
+
 
 def main(): # driver to run the application
     while True: # rerun forever
