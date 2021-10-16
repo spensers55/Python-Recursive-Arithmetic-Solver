@@ -10,7 +10,7 @@
 #       maybe recursively solving in PEMDAS order
 
 listOfOperators = {'+', '-', '*', '/', '^'}
-listOfNumbers = {'1','2','3','4','5','6','7','8','9','0'}
+listOfNumbers = {'1','2','3','4','5','6','7','8','9','0','.'}
 
 # this function validates that the equation entered by the user is solvable by this program
 def validate(equation):
@@ -76,12 +76,12 @@ def solve(equation): # when no more operators exist, it returns to the previous 
     operator = equation[operatorLoc]
 
     # capture numbers
-    firstNum = equation[0, operatorLoc]
-    secondNum = equation[operatorLoc+1, len(equation)]
+    firstNumStr = equation[0:operatorLoc]
+    secondNumStr = equation[operatorLoc+1:len(equation)]
 
     # parse to int
-    firstNum = int(firstNum)
-    secondNum = int(secondNum)
+    firstNum = float(firstNumStr)
+    secondNum = float(secondNumStr)
 
     # calculate result
     if operator == "+":
@@ -115,52 +115,97 @@ def RecursiveParenthesis(equation): #note probe for o/c parenthesis then recur o
         mismatch = 0 # to make sure internal parenthesis don't screw anything up
         for i in equation:
             if i == '(' and oPT != -1: # changes mismatch if 2nd pair of parenthesis
-                mismatch += 1
+                mismatch += 1 # bad
             elif i == '(' and oPT == -1:
-                oPT = equation[index] # captures opening parenthesis
+                oPT = index # captures opening parenthesis
             elif i == ')' and mismatch == 0:
-                cPT = equation[index] # captures matching ending parenthesis
+                cPT = index+1 # captures matching ending parenthesis
                 break
             elif i == ')' and mismatch > 0:
                 mismatch -= 1 # reduces mismatch from closing internal parenthesis
             index += 1
         if oPT != -1:
-            result = RecursiveParenthesis(equation[oPT, cPT])
-            beg = equation[0, oPT+1] # beginning
-            end = equation[cPT, len(equation)] # end
-            equation = beg + result + end # reassign
+            substring = equation[oPT:cPT] # slice out parenthesised section (including parenthesis)
+            substring = substring[1:len(substring)-1] # slice out parenthesis
+            result = RecursiveParenthesis(substring) # recur to check for nested parenthesis
+            beg = equation[0:oPT] # beginning
+            end = equation[cPT:len(equation)] # end
+            equation = beg + str(result) + end # reassign
         else: # if no parenthesis detected
-            return RecursiveExponents(equation)
+            return exponents(equation)
+        return exponents(equation)  # pass to exponents regardless of presence of parenthesis
 
     # ------END PARENTHESIS------
 
-def RecursiveExponents(equation):
+def exponents(equation):
 # ------EXPONENTS------
-    i = len(equation)
-    while True:
-        i -= 1
-        if equation[i] == '^':
-            solution = getNumber(equation, i)
+    index = -1 # start at -1 due to pre-adding
+    while index < len(equation)-1: # range check at -1 due to pre-adding
+        index += 1
+        if equation[index] == '^': # check for exponents entered
+            equation = completeOperation(equation, index) # send to get solved
+    return multiplication(equation)
+
+    # ------END EXPONENTS------
+
+def multiplication(equation):
+    # ------MULTIPLICATION------
+    index = -1
+    while index < len(equation)-1:
+        index += 1
+        if equation[index] == '*': # check for multiplications entered
+            equation = completeOperation(equation, index)
+    return division(equation)
+    # ------END MULTIPLICATION------
+
+def division(equation):
+    # ------DIVISION------
+    index = -1
+    while index < len(equation)-1:
+        index += 1
+        if equation[index] == '/': # check for division entered
+            equation = completeOperation(equation, index)
+    return addition(equation)
+    # ------END DIVISION------
+
+def addition(equation):
+    # ------ADDITION------
+    index = -1
+    while index < len(equation)-1:
+        index += 1
+        if equation[index] == '+': # check for addition entered
+            equation = completeOperation(equation, index)
+    return subtraction(equation)
+    # ------END ADDITION------
+
+def subtraction(equation):
+    # ------SUBTRACTION------
+    index = -1
+    while index < len(equation)-1:
+        index += 1
+        if equation[index] == '-': # check for subtraction entered
+            equation = completeOperation(equation, index)
+    return equation
+    # ------END SUBTRACTION------
 
 
-    # ------MINUS------
 
+def completeOperation(equation, index):
+    counter = 1     # counts distance from the operator
+    begOf1st = -1   # locates the beginning of the first number involved in the operation
+    endOf2nd = -1   # locates the end of the 2nd number involved in the operation
 
-    # ------TODO: finish rest of recursive class------
-
-def getNumber(equation, i):
-    counter = 0
-    begOf1st = -1
-    endOf2nd = -1
-    while True:
-        if (equation[i-counter] in listOfOperators or i-counter == 0) and begOf1st != -1:
-            begOf1st = i-counter+1
-        if (equation[i+counter] in listOfOperators or i+counter == len(equation-1)) and begOf2nd != -1:
-            endOf2nd = i+counter
-        counter += 1
+    while True: # while loop to increment counter and find numbers
+        # when either counter finds an operator, the if statement knows it's found the beginning/end of the number
+        if (index-counter <= 0 or equation[index-counter] in listOfOperators) and begOf1st == -1:
+            begOf1st = index-counter  # store location of beginning
+        if (index+counter >= len(equation) or equation[index+counter] in listOfOperators) and endOf2nd == -1:
+            endOf2nd = index+counter    # store location of end
+        counter += 1    # increment counter
         if begOf1st != -1 and endOf2nd != -1:
-            break
-    return solve(equation[begOf1st, endOf2nd])
+            break   # if found both beginning and end, break and return
+    result = solve(equation[begOf1st:endOf2nd])    # run solve function, get mathematical result
+    return equation[0:begOf1st] + str(result) + equation[endOf2nd:len(equation)] # replace operation with result, return for passing
 
 
 def main(): # driver to run the application
@@ -169,9 +214,9 @@ def main(): # driver to run the application
             equation = input("Enter an arithmetic equation (no spaces, no letters): ")
             vdated = validate(equation) # function call to validate
             if vdated == True:
+                print(RecursiveParenthesis(equation)) # function call to solve
                 break # when valid, break
-        print("validation good")
-        RecursiveSolve(equation) # function call to solve
+             
 # end main function
 
 main() # function call to start program
