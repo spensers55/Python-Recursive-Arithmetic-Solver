@@ -8,6 +8,10 @@
 # follow PEMDAS: must account for ^ and () symbols (modulus division not included for now)
 #   other methods for calculating different substrings of the equation
 #       maybe recursively solving in PEMDAS order
+# THIS PROJECT IS A WORK IN PROJECT. In it's current form, it is usable. More updates are expected.
+# This project was done using Pair Programming (for help when stuck and for sanity) with Justin Chikosky @ justin.chikosky@gmail.com
+
+import tkinter
 
 listOfOperators = {'+', '-', '*', '/', '^'}
 listOfNumbers = {'1','2','3','4','5','6','7','8','9','0','.'}
@@ -31,7 +35,7 @@ def validate(equation):
                     if equation[i] == '-' and negOperator == False:
                         negOperator = True
                     else:
-                        print("Error: operators touching")
+                        popup("Error: operators touching")
                         return False
                 else:
                     touchingOperator = True
@@ -40,18 +44,16 @@ def validate(equation):
                 numUnresolvedPT +=1 # add 1 to number of unresolved parenthesis
             elif equation[i] == ')': # check for closing parenthesis
                 if numUnresolvedPT == 0: # if too many closing parenthesis, return invalid
-                    return False
-                else:
                     numUnresolvedPT -= 1 # else, decrement unresolved parenthesis
             else:
-                print("Unknown character entered: error, line 38")
+                popup("Unknown character entered: error, line 38")
                 return False
             i += 1
     except ValueError:
-        print("Please enter numbers and operators only")
+        popup("Please enter numbers and operators only")
         return False
-    if numUnresolvedPT > 0 or touchingOperator == True:
-        print("Unresolved parenthesis or ending operator. Please try again")
+    if numUnresolvedPT != 0 or touchingOperator == True:
+        popup("Unresolved parenthesis or ending operator. Please try again")
         return False
     
     return True # if all conditions met, validated
@@ -71,6 +73,8 @@ def solve(equation): # when no more operators exist, it returns to the previous 
         operatorLoc = equation.find('+')
     if operatorLoc == -1:
         operatorLoc = equation.find('-') # '-' is last in case of negative numbers
+        if operatorLoc == 0:
+            operatorLoc = equation[1:len(equation)].find('-') # if there is a negative number
 
     # capture operator
     operator = equation[operatorLoc]
@@ -79,13 +83,13 @@ def solve(equation): # when no more operators exist, it returns to the previous 
     firstNumStr = equation[0:operatorLoc]
     secondNumStr = equation[operatorLoc+1:len(equation)]
 
-    # parse to int
+    # parse to float
     firstNum = float(firstNumStr)
     secondNum = float(secondNumStr)
 
     # calculate result
     if operator == "+":
-        result = firstNum + secondNum
+        result = float(float(firstNum) + float(secondNum))
     elif operator == "-":
         result = firstNum - secondNum
     elif operator == "*":
@@ -198,24 +202,56 @@ def completeOperation(equation, index):
     while True: # while loop to increment counter and find numbers
         # when either counter finds an operator, the if statement knows it's found the beginning/end of the number
         if (index-counter <= 0 or equation[index-counter] in listOfOperators) and begOf1st == -1:
-            begOf1st = index-counter  # store location of beginning
+            if(index-counter==0):
+                begOf1st = 0
+            elif equation[index-counter] == '-':
+                if equation[index-counter-1] in listOfOperators:
+                    begOf1st = index-counter
+                else:
+                    begOf1st = index-counter+1
+            else:
+                begOf1st = index-counter+1
         if (index+counter >= len(equation) or equation[index+counter] in listOfOperators) and endOf2nd == -1:
-            endOf2nd = index+counter    # store location of end
+            if(counter == 1 and equation[counter+index] == '-'):    # if it's a negative number
+                pass
+            else:
+                endOf2nd = index+counter    # store location of end
         counter += 1    # increment counter
         if begOf1st != -1 and endOf2nd != -1:
             break   # if found both beginning and end, break and return
     result = solve(equation[begOf1st:endOf2nd])    # run solve function, get mathematical result
     return equation[0:begOf1st] + str(result) + equation[endOf2nd:len(equation)] # replace operation with result, return for passing
 
+def popup(message):     # a general tkinter function to send a message to a tkinter popup
+    popupScene = tkinter.Tk()
+    popupMessage = tkinter.Label(popupScene, text=message)
+    popupMessage.grid(row=0,column=0)
+    quitButton = tkinter.Button(popupScene, text="Quit", command=lambda:quitTK(popupScene))
+    quitButton.grid(row=2,column=1)
+
+
+def quitTK(quitScene):  # a general tkinter function to destroy the scene (close the window) passed in.
+    quitScene.destroy()
+
+def start(expressionEntry):
+    expression = expressionEntry.get()
+    if validate(expression):
+        popup(RecursiveParenthesis(expression))
+    else:
+        pass
 
 def main(): # driver to run the application
-    while True: # rerun forever
-        while True: # run until valid
-            equation = input("Enter an arithmetic equation (no spaces, no letters): ")
-            vdated = validate(equation) # function call to validate
-            if vdated == True:
-                print(RecursiveParenthesis(equation)) # function call to solve
-                break # when valid, break
+    scene = tkinter.Tk()
+    topLabel = tkinter.Label(scene, text="Enter an arithmetic expression to solve it. Do not use spaces or algebraic terms.")
+    topLabel.grid(row=0,column=0)
+    expressionInput = tkinter.Entry(scene, text="Enter expression:")
+    expressionInput.grid(row=1,column=0)
+    enterButton = tkinter.Button(scene, text="Enter", command=lambda:start(expressionInput))
+    enterButton.grid(row=1,column=1)
+    #expressionInput.bind('<Return>', lambda expressionInput:start(expressionInput))
+    quitButton = tkinter.Button(scene, text="Quit", command=lambda:quitTK(scene))
+    quitButton.grid(row=2,column=1)
+    scene.mainloop()
              
 # end main function
 
