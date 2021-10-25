@@ -12,6 +12,7 @@
 # This project was done using Pair Programming (for help when stuck and for sanity) with Justin Chikosky @ justin.chikosky@gmail.com
 
 import tkinter
+import threading
 
 listOfOperators = {'+', '-', '*', '/', '^'}
 listOfNumbers = {'1','2','3','4','5','6','7','8','9','0','.'}
@@ -46,7 +47,7 @@ def validate(equation):
                 if numUnresolvedPT == 0: # if too many closing parenthesis, return invalid
                     numUnresolvedPT -= 1 # else, decrement unresolved parenthesis
             else:
-                popup("Unknown character entered: error, line 38")
+                popup("Unknown character entered: error")
                 return False
             i += 1
     except ValueError:
@@ -233,24 +234,54 @@ def popup(message):     # a general tkinter function to send a message to a tkin
 def quitTK(quitScene):  # a general tkinter function to destroy the scene (close the window) passed in.
     quitScene.destroy()
 
-def start(expressionEntry):
-    expression = expressionEntry.get()
-    if validate(expression):
-        popup(RecursiveParenthesis(expression))
-    else:
-        pass
+def RecursiveSpark(expression, entryBox): # this function is required due to how threads behave and the nature of recursive logic
+    # here, we must call the recursiveParenthesis function and call the popup function using the results
+    RecursiveParenthesis(expression)
+    insertVal = tkinter.StringVar # INCOMPLETE
+    
+
+def start(expressionEntry1, expressionEntry2, expressionEntry3):
+    expression1 = expressionEntry1.get()
+    expression2 = expressionEntry2.get()
+    expression3 = expressionEntry3.get()
+    if validate(expression1):
+        t1 = threading.Thread(target=RecursiveSpark, args=(expression1,expressionEntry1,))
+        t1.start()
+    if validate(expression2):
+        t2 = threading.Thread(target=RecursiveSpark, args=(expression2,expressionEntry2,))
+        t2.start()
+    if validate(expression3):
+        t3 = threading.Thread(target=RecursiveSpark, args=(expression3,expressionEntry3,))
+        t3.start()
+    try: # try/catch block required in case validation fails
+        t1.join()
+    except(UnboundLocalError):
+        popup("Expression 1 is invalid")
+    try:
+        t2.join()
+    except(UnboundLocalError):
+        popup("Expression 2 is invalid")
+    try:
+        t3.join()
+    except(UnboundLocalError):
+        popup("Expression 3 is invalid")
+    pass
 
 def main(): # driver to run the application
     scene = tkinter.Tk()
     topLabel = tkinter.Label(scene, text="Enter an arithmetic expression to solve it. Do not use spaces or algebraic terms.")
-    topLabel.grid(row=0,column=0)
-    expressionInput = tkinter.Entry(scene, text="Enter expression:")
-    expressionInput.grid(row=1,column=0)
-    enterButton = tkinter.Button(scene, text="Enter", command=lambda:start(expressionInput))
-    enterButton.grid(row=1,column=1)
+    topLabel.grid(row=0,column=0,columnspan=4)
+    expressionInput1 = tkinter.Entry(scene)
+    expressionInput1.grid(row=1,column=0)
+    expressionInput2 = tkinter.Entry(scene)
+    expressionInput2.grid(row=1,column=1,columnspan=2)
+    expressionInput3 = tkinter.Entry(scene)
+    expressionInput3.grid(row=1,column=3)
+    enterButton = tkinter.Button(scene, text="Enter", command=lambda:start(expressionInput1, expressionInput2, expressionInput3))
+    enterButton.grid(row=2,column=1)
     #expressionInput.bind('<Return>', lambda expressionInput:start(expressionInput))
     quitButton = tkinter.Button(scene, text="Quit", command=lambda:quitTK(scene))
-    quitButton.grid(row=2,column=1)
+    quitButton.grid(row=2,column=2)
     scene.mainloop()
              
 # end main function
